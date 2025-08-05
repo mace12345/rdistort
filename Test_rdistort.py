@@ -1,5 +1,5 @@
 import unittest
-import rdistort as rd
+import rdistort.rdistort as rd
 import os
 
 
@@ -7,14 +7,14 @@ class Testrdistort(unittest.TestCase):
 
     def test_ReadXYZFilesFromDirectory(self):
         current_dir = os.path.dirname(os.path.abspath(__file__))
-        test_dir = os.path.join(current_dir, "Test")
+        test_dir = os.path.join(current_dir, "test")
         molecule_set = rd.MoleculeSet([])
         molecule_set.ReadXYZFilesFromDirectory(test_dir)
         self.assertEqual(len(molecule_set.MoleculesList), 2)
 
     def test_CompareFeAndMnMolecules(self):
         current_dir = os.path.dirname(os.path.abspath(__file__))
-        test_dir = os.path.join(current_dir, "Test")
+        test_dir = os.path.join(current_dir, "test")
         molecule_set = rd.MoleculeSet([])
         molecule_set.ReadXYZFilesFromDirectory(test_dir)
 

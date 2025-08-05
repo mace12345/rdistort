@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "rdistort"
+version = "0.1.0"
+description = "A package for molecular geometry comparison using the r-distort value."
+readme = "README.md"
+license = {text = "GNU GENERAL PUBLIC LICENSE"}
+authors = [
+  {name = "Samuel Mace", email = "samuelmace98@gmail.com"}
+]
+dependencies = [
+  "numpy",
+  "scipy"
+]
+
+[project.urls]
+"Homepage" = "https://github.com/mace12345/rdistort"
