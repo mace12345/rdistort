@@ -77,6 +77,9 @@ class Measurement:
         self.ReferenceMoleculeAtomCenterIndex = ReferenceMoleculeAtomCenterIndex
         self.ReferenceMoleculeAtomLigandIndex = ReferenceMoleculeAtomLigandIndex
         self.rdistort_value = None
+        self.optimal_xaxis_rotation = None
+        self.optimal_yaxis_rotation = None
+        self.optimal_zaxis_rotation = None
 
         self.test_vector_set = [
             self.TestMolecule.Atoms[i].Coordinates
@@ -198,7 +201,7 @@ class Measurement:
 
     def minimize_angles_with_basin_hopping(
         self,
-        niter: int = 100,
+        niter: int = 500,
         stepsize: float = 100,
         T: float = 10,
         disp: bool = False,
@@ -225,8 +228,8 @@ class Measurement:
             T=T,
             disp=disp,
         )
-
-        print("Minimum value:", result.fun)
-        print("Optimal angles (degrees):", result.x)
-
-        return result
+        # Store the optimal angles and rdistort value
+        self.optimal_xaxis_rotation = result.x[0]
+        self.optimal_yaxis_rotation = result.x[1]
+        self.optimal_zaxis_rotation = result.x[2]
+        self.rdistort_value = result.fun

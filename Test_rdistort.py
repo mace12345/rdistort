@@ -32,9 +32,9 @@ class Testrdistort(unittest.TestCase):
 
         self.assertEqual(measurement.GetCurrent_rdistort_value(), 0.638)
 
-        result = measurement.minimize_angles_with_basin_hopping(niter=10000)
+        measurement.minimize_angles_with_basin_hopping()
 
-        print(result)
+        self.assertLess(measurement.rdistort_value, 0.1)
 
 
 if __name__ == "__main__":
