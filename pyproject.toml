@@ -18,3 +18,7 @@ dependencies = [
 
 [project.urls]
 "Homepage" = "https://github.com/mace12345/rdistort"
+
+[tool.setuptools.packages.find]
+exclude = ["tests*"]
+
