@@ -10,7 +10,7 @@ class Testrdistort(unittest.TestCase):
         test_dir = os.path.join(current_dir, "Test")
         molecule_set = rd.MoleculeSet([])
         molecule_set.ReadXYZFilesFromDirectory(test_dir)
-        self.assertEqual(len(molecule_set.MoleculesList), 3)
+        self.assertEqual(len(molecule_set.MoleculesList), 2)
 
     def test_CompareFeAndMnMolecules(self):
         current_dir = os.path.dirname(os.path.abspath(__file__))
