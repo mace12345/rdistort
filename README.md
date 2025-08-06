@@ -1,1 +1,1 @@
-see Test_rdistort on how to use the code
+see tests/test_rdistort on how to use the code
