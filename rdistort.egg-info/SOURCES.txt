@@ -9,3 +9,4 @@ rdistort.egg-info/dependency_links.txt
 rdistort.egg-info/requires.txt
 rdistort.egg-info/top_level.txt
 tests/Test_rdistort.py
+tests/test_rdistort.py
