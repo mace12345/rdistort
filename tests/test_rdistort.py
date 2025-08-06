@@ -6,7 +6,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 import rdistort.rdistort as rd
 
 
-class Testrdistort(unittest.TestCase):
+class test_rdistort(unittest.TestCase):
 
     def test_ReadXYZFilesFromDirectory(self):
         current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -31,11 +31,17 @@ class Testrdistort(unittest.TestCase):
             ReferenceMoleculeAtomLigandIndex=[0, 1, 9, 10, 13, 61],
         )
 
-        self.assertEqual(measurement.GetCurrent_rdistort_value(), 0.638)
+        self.assertEqual(measurement.GetCurrent_rdistort_value(), 0.63787)
 
-        measurement.minimize_angles_with_basin_hopping()
-
+        measurement.Minimize_rdistort_BasisHopping()
         self.assertLess(measurement.rdistort_value, 0.1)
+
+        measurement.Minimize_rdistort_KabschAlignment()
+        measurement.Minimize_rdistort_BasisHopping()
+        self.assertLess(measurement.rdistort_value, 0.05)
+
+        measurement.Minimize_rdistort_BruteForce()
+        self.assertLess(measurement.rdistort_value, 0.02)
 
 
 if __name__ == "__main__":

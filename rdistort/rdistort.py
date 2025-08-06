@@ -3,6 +3,7 @@ from scipy.optimize import linear_sum_assignment
 from scipy.optimize import basinhopping
 import os
 import glob
+import itertools
 
 
 class Atom:
@@ -256,7 +257,7 @@ class Measurement:
         max_total_weight = magnitude_matrix[row_ind, col_ind].sum()
         # Calculate the rdistort value
         self.rdistort_value = round(
-            (len(self.test_vector_set) * 2) - max_total_weight, 3
+            (len(self.test_vector_set) * 2) - max_total_weight, 5
         )
         return self.rdistort_value
 
@@ -348,7 +349,7 @@ class Measurement:
         max_total_weight = magnitude_matrix[row_ind, col_ind].sum()
         # Calculate the rdistort value
         self.rdistort_value = round(
-            (len(self.test_vector_set) * 2) - max_total_weight, 3
+            (len(self.test_vector_set) * 2) - max_total_weight, 5
         )
         return self.rdistort_value
 
@@ -395,12 +396,13 @@ class Measurement:
         ]
         return self.Calculate_rdistort_value_NewTest_vector_set(new_test_vector_set)
 
-    def minimize_angles_with_basin_hopping(
+    def Minimize_rdistort_BasisHopping(
         self,
         niter: int = 500,
         stepsize: float = 100,
         T: float = 10,
         disp: bool = False,
+        x0: list = [0.0, 0.0, 0.0],
     ):
         """
         Optimizes rotation angles (Euler angles) to minimize the rdistort value using the basin-hopping algorithm.
@@ -436,9 +438,6 @@ class Measurement:
             theta, phi, psi = x
             return self.Rotate_and_Calculate_rdistort_value(theta, phi, psi)
 
-        # Initial guess (in degrees)
-        x0 = [0.0, 0.0, 0.0]
-
         # Optional: bounds or constraints (basinhopping supports them via 'minimizer_kwargs')
         bounds = [(0, 360), (0, 360), (0, 360)]
         minimizer_kwargs = {"method": "L-BFGS-B", "bounds": bounds}
@@ -458,3 +457,71 @@ class Measurement:
         self.optimal_yaxis_rotation = result.x[1]
         self.optimal_zaxis_rotation = result.x[2]
         self.rdistort_value = result.fun
+
+    def kabsch_alignment(self, reference_vectors, test_vectors):
+        # Written by ChatGPT
+        """Align test_vectors to reference_vectors using the Kabsch algorithm."""
+        C = np.dot(reference_vectors.T, test_vectors)
+        V, S, W = np.linalg.svd(C)
+        d = np.sign(np.linalg.det(np.dot(W.T, V.T)))
+        rotation_matrix = np.dot(W.T, np.dot(np.diag([1, 1, d]), V.T))
+        return rotation_matrix
+
+    def Minimize_rdistort_KabschAlignment(self):
+        # Generate all possible permutations of the test vector set
+        permutations = list(itertools.permutations(self.test_vector_set))
+        # Calculate the rdistort value for each permutation using Kabsch alignment
+        smallest_rdistort_value = float("inf")
+        count = 0
+        for permutation_vectors in permutations:
+            # Calculate the rotation matrix using Kabsch alignment
+            rotation_matrix = self.kabsch_alignment(
+                np.array(self.reference_vector_set), np.array(permutation_vectors)
+            )
+            rotated_vectors = [
+                np.dot(rotation_matrix, v) for v in permutation_vectors
+            ]
+            # Calculate the rdistort value for the rotated vectors
+            rdistort_value = self.Calculate_rdistort_value_NewTest_vector_set(
+                rotated_vectors
+            )
+            if rdistort_value < smallest_rdistort_value:
+                smallest_rdistort_value = rdistort_value
+                self.test_vector_set = rotated_vectors
+    
+    def Minimize_rdistort_BruteForce(self, grid_size=10):
+        """
+        Brute-force search to minimize the rdistort value by testing all combinations of Euler angles.
+
+        Parameters
+        ----------
+        grid_size : int, optional
+            Number of discrete steps for each rotation angle (default is 10).
+
+        Returns
+        -------
+        None
+
+        Notes
+        -----
+        - This method exhaustively tests all combinations of Euler angles in the range [0, 360] degrees.
+        - Updates the internal attributes:
+            `optimal_xaxis_rotation`, `optimal_yaxis_rotation`, `optimal_zaxis_rotation`,
+            and `rdistort_value`.
+        """
+        angles = np.arange(0, 360, grid_size)
+        best_rdistort_value = float("inf")
+        best_angles = (0, 0, 0)
+
+        for theta in angles:
+            for phi in angles:
+                for psi in angles:
+                    rdistort_value = self.Rotate_and_Calculate_rdistort_value(
+                        theta, phi, psi
+                    )
+                    if rdistort_value < best_rdistort_value:
+                        best_rdistort_value = rdistort_value
+                        best_angles = (theta, phi, psi)
+
+        self.optimal_xaxis_rotation, self.optimal_yaxis_rotation, self.optimal_zaxis_rotation = best_angles
+        self.rdistort_value = best_rdistort_value
