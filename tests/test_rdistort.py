@@ -43,6 +43,12 @@ class test_rdistort(unittest.TestCase):
         measurement.Minimize_rdistort_BruteForce()
         self.assertLess(measurement.rdistort_value, 0.02)
 
+        measurement.Minimize_rdistort_EfficientBruteForce(
+            grid_size_first_stage=10,
+            grid_size_second_stage=1,
+        )
+        self.assertLess(measurement.rdistort_value, 0.019)
+
 
 if __name__ == "__main__":
     unittest.main()

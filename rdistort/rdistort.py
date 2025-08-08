@@ -403,6 +403,7 @@ class Measurement:
         T: float = 10,
         disp: bool = False,
         x0: list = [0.0, 0.0, 0.0],
+        bounds: list = [(0, 360), (0, 360), (0, 360)],
     ):
         """
         Optimizes rotation angles (Euler angles) to minimize the rdistort value using the basin-hopping algorithm.
@@ -439,7 +440,6 @@ class Measurement:
             return self.Rotate_and_Calculate_rdistort_value(theta, phi, psi)
 
         # Optional: bounds or constraints (basinhopping supports them via 'minimizer_kwargs')
-        bounds = [(0, 360), (0, 360), (0, 360)]
         minimizer_kwargs = {"method": "L-BFGS-B", "bounds": bounds}
 
         # Run basin hopping
@@ -478,9 +478,7 @@ class Measurement:
             rotation_matrix = self.kabsch_alignment(
                 np.array(self.reference_vector_set), np.array(permutation_vectors)
             )
-            rotated_vectors = [
-                np.dot(rotation_matrix, v) for v in permutation_vectors
-            ]
+            rotated_vectors = [np.dot(rotation_matrix, v) for v in permutation_vectors]
             # Calculate the rdistort value for the rotated vectors
             rdistort_value = self.Calculate_rdistort_value_NewTest_vector_set(
                 rotated_vectors
@@ -488,8 +486,14 @@ class Measurement:
             if rdistort_value < smallest_rdistort_value:
                 smallest_rdistort_value = rdistort_value
                 self.test_vector_set = rotated_vectors
-    
-    def Minimize_rdistort_BruteForce(self, grid_size=10):
+
+    def Minimize_rdistort_BruteForce(
+        self,
+        grid_size=10,
+        x_angles_range: list = [0, 360],
+        y_angles_range: list = [0, 360],
+        z_angles_range: list = [0, 360],
+    ):
         """
         Brute-force search to minimize the rdistort value by testing all combinations of Euler angles.
 
@@ -509,13 +513,15 @@ class Measurement:
             `optimal_xaxis_rotation`, `optimal_yaxis_rotation`, `optimal_zaxis_rotation`,
             and `rdistort_value`.
         """
-        angles = np.arange(0, 360, grid_size)
+        x_angles = np.arange(x_angles_range[0], x_angles_range[1], grid_size)
+        y_angles = np.arange(y_angles_range[0], y_angles_range[1], grid_size)
+        z_angles = np.arange(z_angles_range[0], z_angles_range[1], grid_size)
         best_rdistort_value = float("inf")
         best_angles = (0, 0, 0)
 
-        for theta in angles:
-            for phi in angles:
-                for psi in angles:
+        for theta in x_angles:
+            for phi in y_angles:
+                for psi in z_angles:
                     rdistort_value = self.Rotate_and_Calculate_rdistort_value(
                         theta, phi, psi
                     )
@@ -523,5 +529,57 @@ class Measurement:
                         best_rdistort_value = rdistort_value
                         best_angles = (theta, phi, psi)
 
-        self.optimal_xaxis_rotation, self.optimal_yaxis_rotation, self.optimal_zaxis_rotation = best_angles
+        (
+            self.optimal_xaxis_rotation,
+            self.optimal_yaxis_rotation,
+            self.optimal_zaxis_rotation,
+        ) = best_angles
         self.rdistort_value = best_rdistort_value
+
+    def Minimize_rdistort_EfficientBruteForce(
+        self,
+        grid_size_first_stage=10,
+        grid_size_second_stage=1,
+    ):
+        self.Minimize_rdistort_BruteForce(
+            grid_size=grid_size_first_stage,
+        )
+        self.Minimize_rdistort_BruteForce(
+            grid_size=grid_size_second_stage,
+            x_angles_range=[
+                self.optimal_xaxis_rotation - grid_size_first_stage / 2,
+                self.optimal_xaxis_rotation + grid_size_first_stage / 2,
+            ],
+            y_angles_range=[
+                self.optimal_yaxis_rotation - grid_size_first_stage / 2,
+                self.optimal_yaxis_rotation + grid_size_first_stage / 2,
+            ],
+            z_angles_range=[
+                self.optimal_zaxis_rotation - grid_size_first_stage / 2,
+                self.optimal_zaxis_rotation + grid_size_first_stage / 2,
+            ],
+        )
+        self.Minimize_rdistort_BasisHopping(
+            niter=100,
+            stepsize=grid_size_second_stage,
+            T=1,
+            x0=[
+                self.optimal_xaxis_rotation,
+                self.optimal_yaxis_rotation,
+                self.optimal_zaxis_rotation,
+            ],
+            bounds=[
+                (
+                    self.optimal_xaxis_rotation - grid_size_second_stage,
+                    self.optimal_xaxis_rotation + grid_size_second_stage,
+                ),
+                (
+                    self.optimal_yaxis_rotation - grid_size_second_stage,
+                    self.optimal_yaxis_rotation + grid_size_second_stage,
+                ),
+                (
+                    self.optimal_zaxis_rotation - grid_size_second_stage,
+                    self.optimal_zaxis_rotation + grid_size_second_stage,
+                ),
+            ],
+        )
