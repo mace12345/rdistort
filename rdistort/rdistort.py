@@ -220,7 +220,7 @@ class Measurement:
                 "Test and reference vector sets must have the same length.\nI.E. the ligand index lists must be the same length."
             )
 
-    def Calculate_rdistort_value(self):
+    def Calculate_rdistort_value(self, match_vectors_hungarian_algorithm: bool = True):
         """
         Calculates the rdistort value, a geometric distortion metric between
         the test and reference vector sets.
@@ -241,25 +241,40 @@ class Measurement:
         - This method modifies the internal `rdistort_value` attribute.
         - The method assumes both vector sets are already normalized and of equal length.
         """
-        # Calculate the magnitude matrix
-        magnitude_matrix = np.zeros(
-            (len(self.test_vector_set), len(self.reference_vector_set))
-        )
-        for i, test_vector in enumerate(self.test_vector_set):
-            for j, reference_vector in enumerate(self.reference_vector_set):
-                magnitude_matrix[i, j] = np.linalg.norm(test_vector + reference_vector)
-        # Since linear_sum_assignment solves for MINIMUM cost,
-        # negate the weights to convert to MAXIMUM assignment
-        cost_matrix = -magnitude_matrix
-        # Solve the assignment problem
-        row_ind, col_ind = linear_sum_assignment(cost_matrix)
-        # Total maximum weight
-        max_total_weight = magnitude_matrix[row_ind, col_ind].sum()
-        # Calculate the rdistort value
-        self.rdistort_value = round(
-            (len(self.test_vector_set) * 2) - max_total_weight, 5
-        )
-        return self.rdistort_value
+        if match_vectors_hungarian_algorithm:
+            # Calculate the magnitude matrix
+            magnitude_matrix = np.zeros(
+                (len(self.test_vector_set), len(self.reference_vector_set))
+            )
+            for i, test_vector in enumerate(self.test_vector_set):
+                for j, reference_vector in enumerate(self.reference_vector_set):
+                    magnitude_matrix[i, j] = np.linalg.norm(
+                        test_vector + reference_vector
+                    )
+            # Since linear_sum_assignment solves for MINIMUM cost,
+            # negate the weights to convert to MAXIMUM assignment
+            cost_matrix = -magnitude_matrix
+            # Solve the assignment problem
+            row_ind, col_ind = linear_sum_assignment(cost_matrix)
+            # Total maximum weight
+            max_total_weight = magnitude_matrix[row_ind, col_ind].sum()
+            # Calculate the rdistort value
+            self.rdistort_value = round(
+                (len(self.test_vector_set) * 2) - max_total_weight, 5
+            )
+            return self.rdistort_value
+        else:
+            magnitude_list = [
+                np.linalg.norm(test_vector + reference_vector)
+                for test_vector, reference_vector in zip(
+                    self.test_vector_set, self.reference_vector_set
+                )
+            ]
+            max_total_weight = sum(magnitude_list)
+            self.rdistort_value = round(
+                (len(self.test_vector_set) * 2) - max_total_weight, 5
+            )
+            return self.rdistort_value
 
     def GetCurrent_rdistort_value(self):
         """
@@ -309,8 +324,7 @@ class Measurement:
         )
 
     def Calculate_rdistort_value_NewTest_vector_set(
-        self,
-        new_test_vector_set: list,
+        self, new_test_vector_set: list, match_vectors_hungarian_algorithm: bool = True
     ):
         """
         Calculates the rdistort value using a custom test vector set instead of the default one.
@@ -333,31 +347,47 @@ class Measurement:
         - Updates the internal `rdistort_value` attribute.
         - Uses the Hungarian algorithm to find optimal matching between vectors.
         """
-        # Calculate the magnitude matrix
-        magnitude_matrix = np.zeros(
-            (len(new_test_vector_set), len(self.reference_vector_set))
-        )
-        for i, test_vector in enumerate(new_test_vector_set):
-            for j, reference_vector in enumerate(self.reference_vector_set):
-                magnitude_matrix[i, j] = np.linalg.norm(test_vector + reference_vector)
-        # Since linear_sum_assignment solves for MINIMUM cost,
-        # negate the weights to convert to MAXIMUM assignment
-        cost_matrix = -magnitude_matrix
-        # Solve the assignment problem
-        row_ind, col_ind = linear_sum_assignment(cost_matrix)
-        # Total maximum weight
-        max_total_weight = magnitude_matrix[row_ind, col_ind].sum()
-        # Calculate the rdistort value
-        self.rdistort_value = round(
-            (len(self.test_vector_set) * 2) - max_total_weight, 5
-        )
-        return self.rdistort_value
+        if match_vectors_hungarian_algorithm:
+            # Calculate the magnitude matrix
+            magnitude_matrix = np.zeros(
+                (len(new_test_vector_set), len(self.reference_vector_set))
+            )
+            for i, test_vector in enumerate(new_test_vector_set):
+                for j, reference_vector in enumerate(self.reference_vector_set):
+                    magnitude_matrix[i, j] = np.linalg.norm(
+                        test_vector + reference_vector
+                    )
+            # Since linear_sum_assignment solves for MINIMUM cost,
+            # negate the weights to convert to MAXIMUM assignment
+            cost_matrix = -magnitude_matrix
+            # Solve the assignment problem
+            row_ind, col_ind = linear_sum_assignment(cost_matrix)
+            # Total maximum weight
+            max_total_weight = magnitude_matrix[row_ind, col_ind].sum()
+            # Calculate the rdistort value
+            self.rdistort_value = round(
+                (len(self.test_vector_set) * 2) - max_total_weight, 5
+            )
+            return self.rdistort_value
+        else:
+            magnitude_list = [
+                np.linalg.norm(test_vector + reference_vector)
+                for test_vector, reference_vector in zip(
+                    new_test_vector_set, self.reference_vector_set
+                )
+            ]
+            max_total_weight = sum(magnitude_list)
+            self.rdistort_value = round(
+                (len(self.test_vector_set) * 2) - max_total_weight, 5
+            )
+            return self.rdistort_value
 
     def Rotate_and_Calculate_rdistort_value(
         self,
         theta_degs: float,
         phi_degs: float,
         psi_degs: float,
+        match_vectors_hungarian_algorithm: bool = True,
     ):
         """
         Applies Euler angle rotations to the test vector set and calculates the resulting rdistort value.
@@ -394,7 +424,9 @@ class Measurement:
             np.dot(x_rotation_axis, np.dot(y_rotation_axis, np.dot(z_rotation_axis, v)))
             for v in self.test_vector_set
         ]
-        return self.Calculate_rdistort_value_NewTest_vector_set(new_test_vector_set)
+        return self.Calculate_rdistort_value_NewTest_vector_set(
+            new_test_vector_set, match_vectors_hungarian_algorithm
+        )
 
     def Minimize_rdistort_BasisHopping(
         self,
@@ -404,6 +436,7 @@ class Measurement:
         disp: bool = False,
         x0: list = [0.0, 0.0, 0.0],
         bounds: list = [(0, 360), (0, 360), (0, 360)],
+        match_vectors_hungarian_algorithm: bool = True,
     ):
         """
         Optimizes rotation angles (Euler angles) to minimize the rdistort value using the basin-hopping algorithm.
@@ -437,7 +470,9 @@ class Measurement:
         # Wrapper for the objective function
         def objective(x):
             theta, phi, psi = x
-            return self.Rotate_and_Calculate_rdistort_value(theta, phi, psi)
+            return self.Rotate_and_Calculate_rdistort_value(
+                theta, phi, psi, match_vectors_hungarian_algorithm
+            )
 
         # Optional: bounds or constraints (basinhopping supports them via 'minimizer_kwargs')
         minimizer_kwargs = {"method": "L-BFGS-B", "bounds": bounds}
@@ -582,4 +617,20 @@ class Measurement:
                     self.optimal_zaxis_rotation + grid_size_second_stage,
                 ),
             ],
+        )
+
+    def Minimize_rdistort_NoMatchingVectorsKabschAlignment(self):
+        # Calculate the rotation matrix using Kabsch alignment
+        rotation_matrix = self.kabsch_alignment(
+            np.array(self.reference_vector_set), np.array(self.test_vector_set)
+        )
+        self.test_vector_set = [
+            np.dot(rotation_matrix, v) for v in self.test_vector_set
+        ]
+        self.Minimize_rdistort_BasisHopping(
+            niter=500,
+            stepsize=90,
+            T=10,
+            bounds=[(0, 90), (0, 90), (0, 90)],
+            match_vectors_hungarian_algorithm=False,
         )
