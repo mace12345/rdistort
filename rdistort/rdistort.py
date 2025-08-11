@@ -528,6 +528,7 @@ class Measurement:
         x_angles_range: list = [0, 360],
         y_angles_range: list = [0, 360],
         z_angles_range: list = [0, 360],
+        match_vectors_hungarian_algorithm: bool = True,
     ):
         """
         Brute-force search to minimize the rdistort value by testing all combinations of Euler angles.
@@ -558,7 +559,7 @@ class Measurement:
             for phi in y_angles:
                 for psi in z_angles:
                     rdistort_value = self.Rotate_and_Calculate_rdistort_value(
-                        theta, phi, psi
+                        theta, phi, psi, match_vectors_hungarian_algorithm
                     )
                     if rdistort_value < best_rdistort_value:
                         best_rdistort_value = rdistort_value
@@ -573,11 +574,19 @@ class Measurement:
 
     def Minimize_rdistort_EfficientBruteForce(
         self,
+        x_angles_range: list = [0, 360],
+        y_angles_range: list = [0, 360],
+        z_angles_range: list = [0, 360],
         grid_size_first_stage=10,
         grid_size_second_stage=1,
+        match_vectors_hungarian_algorithm: bool = True,
     ):
         self.Minimize_rdistort_BruteForce(
             grid_size=grid_size_first_stage,
+            x_angles_range=x_angles_range,
+            y_angles_range=y_angles_range,
+            z_angles_range=z_angles_range,
+            match_vectors_hungarian_algorithm=match_vectors_hungarian_algorithm,
         )
         self.Minimize_rdistort_BruteForce(
             grid_size=grid_size_second_stage,
@@ -593,11 +602,12 @@ class Measurement:
                 self.optimal_zaxis_rotation - grid_size_first_stage / 2,
                 self.optimal_zaxis_rotation + grid_size_first_stage / 2,
             ],
+            match_vectors_hungarian_algorithm=match_vectors_hungarian_algorithm,
         )
         self.Minimize_rdistort_BasisHopping(
             niter=100,
-            stepsize=grid_size_second_stage,
-            T=1,
+            stepsize=grid_size_first_stage * 2,
+            T=100,
             x0=[
                 self.optimal_xaxis_rotation,
                 self.optimal_yaxis_rotation,
@@ -605,18 +615,19 @@ class Measurement:
             ],
             bounds=[
                 (
-                    self.optimal_xaxis_rotation - grid_size_second_stage,
-                    self.optimal_xaxis_rotation + grid_size_second_stage,
+                    self.optimal_xaxis_rotation - grid_size_first_stage,
+                    self.optimal_xaxis_rotation + grid_size_first_stage,
                 ),
                 (
-                    self.optimal_yaxis_rotation - grid_size_second_stage,
-                    self.optimal_yaxis_rotation + grid_size_second_stage,
+                    self.optimal_yaxis_rotation - grid_size_first_stage,
+                    self.optimal_yaxis_rotation + grid_size_first_stage,
                 ),
                 (
-                    self.optimal_zaxis_rotation - grid_size_second_stage,
-                    self.optimal_zaxis_rotation + grid_size_second_stage,
+                    self.optimal_zaxis_rotation - grid_size_first_stage,
+                    self.optimal_zaxis_rotation + grid_size_first_stage,
                 ),
             ],
+            match_vectors_hungarian_algorithm=match_vectors_hungarian_algorithm,
         )
 
     def Minimize_rdistort_NoMatchingVectorsKabschAlignment(self):
@@ -627,10 +638,10 @@ class Measurement:
         self.test_vector_set = [
             np.dot(rotation_matrix, v) for v in self.test_vector_set
         ]
-        self.Minimize_rdistort_BasisHopping(
-            niter=500,
-            stepsize=90,
-            T=10,
-            bounds=[(0, 90), (0, 90), (0, 90)],
-            match_vectors_hungarian_algorithm=False,
+        self.Minimize_rdistort_EfficientBruteForce(
+            x_angles_range=[-22.5, 22.5],
+            y_angles_range=[-22.5, 22.5],
+            z_angles_range=[-22.5, 22.5],
+            grid_size_first_stage=2.5,
+            grid_size_second_stage=1,
         )
