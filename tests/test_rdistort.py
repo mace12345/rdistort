@@ -50,7 +50,7 @@ class test_rdistort(unittest.TestCase):
         # )
         # sself.assertLess(measurement.rdistort_value, 0.019)
 
-    def test_GetMass_rdistortValues(self):
+    """def test_GetMass_rdistortValues(self):
         location = "C:/Users/samue/OneDrive - University of Leeds/Samuel Mace PhD Research Project/SpinStateV2/ResultsAnalysis/XYZ_FILES"
 
         methods = [
@@ -116,7 +116,7 @@ class test_rdistort(unittest.TestCase):
                         f"{location}/{metal}Lig-S{mult}_{DFT}-def2-TZVP_rdistort_value.csv"
                     )
 
-        print(error_count)
+        print(error_count)"""
 
 
 if __name__ == "__main__":

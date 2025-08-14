@@ -591,22 +591,22 @@ class Measurement:
         self.Minimize_rdistort_BruteForce(
             grid_size=grid_size_second_stage,
             x_angles_range=[
-                self.optimal_xaxis_rotation - grid_size_first_stage / 2,
-                self.optimal_xaxis_rotation + grid_size_first_stage / 2,
+                self.optimal_xaxis_rotation - grid_size_first_stage,
+                self.optimal_xaxis_rotation + grid_size_first_stage,
             ],
             y_angles_range=[
-                self.optimal_yaxis_rotation - grid_size_first_stage / 2,
-                self.optimal_yaxis_rotation + grid_size_first_stage / 2,
+                self.optimal_yaxis_rotation - grid_size_first_stage,
+                self.optimal_yaxis_rotation + grid_size_first_stage,
             ],
             z_angles_range=[
-                self.optimal_zaxis_rotation - grid_size_first_stage / 2,
-                self.optimal_zaxis_rotation + grid_size_first_stage / 2,
+                self.optimal_zaxis_rotation - grid_size_first_stage,
+                self.optimal_zaxis_rotation + grid_size_first_stage,
             ],
             match_vectors_hungarian_algorithm=match_vectors_hungarian_algorithm,
         )
         self.Minimize_rdistort_BasisHopping(
             niter=100,
-            stepsize=grid_size_first_stage * 2,
+            stepsize=grid_size_first_stage,
             T=100,
             x0=[
                 self.optimal_xaxis_rotation,
